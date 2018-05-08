@@ -1,0 +1,4 @@
+notes for flashfact
+
+Project Structure guide.
+http://pymbook.readthedocs.io/en/latest/projectstructure.html#setup-py
