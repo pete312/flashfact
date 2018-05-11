@@ -1,4 +1,6 @@
 # singleton pattern to store application state
+
+
 class AppState:
     class __State:
             
@@ -6,8 +8,8 @@ class AppState:
             return repr(self) + self.val
     instance = None
     def __init__(self):
-        if not State.instance:
-            State.instance = State.__State()
+        if not AppState.instance:
+            AppState.instance = AppState.__State()
         
             
     def __setattr__(self, name, val):
