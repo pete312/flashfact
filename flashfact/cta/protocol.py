@@ -6,7 +6,7 @@ import pickle as _pickle
 import os.path
 import xml.etree.ElementTree as ET
 import requests
-
+from random import random
 logger = logging.getLogger(__name__)
 
 appstate = state.AppState()
@@ -87,38 +87,50 @@ def fcache(filename, data=None, pickle=False):
         return data
 
 def get_bus_stop_activity(stop_number):
-    stop_activity = 'http://www.ctabustracker.com/bustime/eta/getStopPredictionsETA.jsp?stop={stop}'.format(stop=int(stop_number))
+    stop_activity = 'http://www.ctabustracker.com/bustime/eta/getStopPredictionsETA.jsp?stop={stop}&key={randkey}'.format(stop=int(stop_number), randkey=random())
     results = []
     cache_file = '/tmp/cta_stop_activity_%s.dat' % stop_number
     if appstate.offline:
-        stop_activity = cache(cache_file)
+        results = fcache(cache_file, pickle=True)
+        return results
     else:
-        tracker = requests.get(stop_activity)
-        ET.format()
-    
+        tracking = requests.get(stop_activity)
+        if tracking.status_code == 200:
+            root = ET.fromstring(tracking.text)
+        else:
+            raise IOError("no such file "+ cache_file)
+        
+        for c in root.getchildren():
+            for v in c.getchildren():
+                results.append({i.tag:i.text for i in v})
+        
+       
+     
     return results
 
 
 def get_routes():
+    
+    # consider returning cache results
     if appstate.offline:
-        return fcache('/tmp/bustracker.routes.dat','rb', pickle=True)
+        routes = fcache('/tmp/bustracker.routes.dat','rb', pickle=True)
+        if routes:
+            return routes
+        
     routes = {'Northbound':[], 'Southbound':[]}
     route_xml = requests.get(_ROUTE_URL.format(direction='Southbound')).text
     root = ET.fromstring(route_xml)
     for c in root.iter('stop'):
         route  = {i.tag:i.text for i in c}
         routes['Southbound'].append(route)
-        #route['direction'] = 'Southbound'
-        #routes[route['name']] = route
+      
             
     route_xml = requests.get(_ROUTE_URL.format(direction='Northbound')).text
     root = ET.fromstring(route_xml)
     for c in root.iter('stop'):
         route  = {i.tag:i.text for i in c}
-        #route['direction'] = 'Northbound'
         routes['Northbound'].append(route)
-        #routes[route['name']] = route
-    f = open('/tmp/bustracker.routes.dat','wb')
+
     fcache('/tmp/bustracker.routes.dat', routes, pickle=True)
     
     return routes
