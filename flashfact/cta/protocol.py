@@ -4,6 +4,8 @@ import state
 import logging
 import pickle as _pickle
 import os.path
+import xml.etree.ElementTree as ET
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,9 @@ appstate = state.AppState()
 ##     </stops>
 ## </route>
 
+_ROUTE_URL = 'http://www.ctabustracker.com/bustime/map/getStopsForRouteDirection.jsp?route=49B&direction={direction}'
+
+
 def fcache(filename, data=None, pickle=False):
     '''
         file cache function:
@@ -94,31 +99,27 @@ def get_bus_stop_activity(stop_number):
     return results
 
 
-def get_routes(offline=False):
-    if offline:
-        return pickle.load(open('/tmp/bustracker.routes.dat','rb'))
-    routes = {}
-    route_xml = requests.get(route_information % 'Southbound').text
+def get_routes():
+    if appstate.offline:
+        return fcache('/tmp/bustracker.routes.dat','rb', pickle=True)
+    routes = {'Northbound':[], 'Southbound':[]}
+    route_xml = requests.get(_ROUTE_URL.format(direction='Southbound')).text
     root = ET.fromstring(route_xml)
     for c in root.iter('stop'):
-        route = dict(
-            direction='Southbound',
-            id=int(c.find('id').text),
-            name='Southbound ' + c.find('name').text
-            )
-        routes[route['name']] = route
+        route  = {i.tag:i.text for i in c}
+        routes['Southbound'].append(route)
+        #route['direction'] = 'Southbound'
+        #routes[route['name']] = route
             
-    route_xml = requests.get(route_information % 'Northbound').text
+    route_xml = requests.get(_ROUTE_URL.format(direction='Northbound')).text
     root = ET.fromstring(route_xml)
     for c in root.iter('stop'):
-        route = dict(
-            direction='Northbound',
-            id=int(c.find('id').text),
-            name='Northbound ' + c.find('name').text
-            )
-        routes[route['name']] = route
+        route  = {i.tag:i.text for i in c}
+        #route['direction'] = 'Northbound'
+        routes['Northbound'].append(route)
+        #routes[route['name']] = route
     f = open('/tmp/bustracker.routes.dat','wb')
-    pickle.dump(routes,f)
+    fcache('/tmp/bustracker.routes.dat', routes, pickle=True)
     
     return routes
 
