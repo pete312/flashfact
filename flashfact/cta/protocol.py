@@ -90,19 +90,24 @@ def get_bus_stop_activity(stop_number):
     stop_activity = 'http://www.ctabustracker.com/bustime/eta/getStopPredictionsETA.jsp?stop={stop}&key={randkey}'.format(stop=int(stop_number), randkey=random())
     results = []
     cache_file = '/tmp/cta_stop_activity_%s.dat' % stop_number
+    logger.info("cache file is " + cache_file)
     if appstate.offline:
         results = fcache(cache_file, pickle=True)
         return results
     else:
+        
+        logger.info("get arrival data from " + stop_activity)
         tracking = requests.get(stop_activity)
         if tracking.status_code == 200:
+            logger.info("url text " + tracking.text)
             root = ET.fromstring(tracking.text)
         else:
-            raise IOError("no such file "+ cache_file)
+            raise IOError("no such file "+ root.dump())
         
-        for c in root.getchildren():
-            for v in c.getchildren():
-                results.append({i.tag:i.text for i in v})
+        for row in root: 
+            logger.info("arrival time {0}".format({i.tag:i.text for i in row}))
+            results.append({i.tag:i.text for i in row})
+    
         
     return results
 
