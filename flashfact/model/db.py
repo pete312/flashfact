@@ -11,6 +11,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import inspect, select
 from datetime import datetime
 
+import logging
+
 class DatabaseNotReady(Exception):
     pass
     
@@ -19,9 +21,14 @@ class EndWithoutBeginTran(Exception):
     
 class NoBeginTran(Exception):
     pass
+    
+class BeginTranInProgress(Exception):
+    pass
 
 
 from model.cta import CTARoute, CTAArrival, Base
+
+logger = logging.getLogger(__name__)
 
 #Base = declarative_base()
 
@@ -39,8 +46,15 @@ class DB:
         self.ready = False
         self.session = None
         
+        
+    def new_session(self):
+        return Session(self.engine)
+        
     def begin_tran(self):
+        if self.session:
+            raise BeginTranInProgress()
         self.session = Session(self.engine)
+        return self.session
         
     def end_tran(self):
         if not self.session:
@@ -96,48 +110,102 @@ class DB:
                 # print("select one of the formats provided")
         
     def insert_cta_route(self, row, session):
+       
+        logger.info("inserting row {0}".format( row ))
         d = CTARoute()
-        #print(row)
         d.route_number  = row['route_number']
         d.stop_name     = row['stop_name']
         d.stop_id       = row['stop_id']
         d.direction     = row['direction']
         
+        
         session.add(d)
        
        
+    def insert_cta_arrival(self, row, session):
+        logger.info( "insert {0}".format(row) ) 
+            
+       
         
-    def insert(self, table, data):
+    def insert(self, table, data, session=None):
     
+        if not session:
+            session = self.new_session()
         if not self.session:
             raise NoBeginTran("insert without begin_tran")
-            
-        print(table, type(table), CTARoute)
+       
+       
         if table == CTARoute:
             
             if type(data) == dict: 
-                self.insert_cta_route(data, self.session)
+                self.insert_cta_route(data, session)
             else:
                 for row in data:
-                    print("row ins", row)
                     self.insert_cta_route(row, session)
+        elif table == CTAArrival:
+            self.insert_cta_arrival(self, row, session)
+                    
+        session.commit()
         
-        # insert data from d which is a table of values from self.get_load_dfx('mm-dd-yyyy')
-        # year = ' ' + str(datetime.now().year)
-        # date = datetime.strptime( d['Date'] + year, '%d-%b %a %Y' ).date()
-        # #time = datetime.strptime( d['GMT'] , '%H:%M' ).time()
-        # evd = EventData()
-        # evd.ev_date         = date
-        # evd.ev_time         = d['GMT'] 
-        # evd.currency        = d['Currency']
-        # evd.event_text      = d['Event']
-        # evd.previous        = d['Previous']
-        # evd.forcast         = d['Forecast']
         
-        # if session:
-            # print("adding ", evd )
-            # session.add(evd)
-        # return evd
+       
+    def merge_route_data(self, route_data):
+        
+        session = self.new_session()
+        
+        existing_data = session.query(CTARoute).order_by('route_number','stop_id')
+        
+        # index the route_data
+        rdx = {"{route}_{stop}".format(route=i['route_number'], stop=i['stop_id']) :i for i in route_data}
+        visited = []
+        to_add = rdx.copy()
+        for d in existing_data:
+            key = "{route}_{stop}".format(route=d.route_number, stop=d.stop_id) 
+            print("row id", d.id, key, end=' ' )
+            if key in visited:
+                logger.warning("duplicate data {0}".format(d))
+            elif rdx[key]:
+                
+                del to_add[key]
+            else:
+                logger.info("db has extra row {0}".format(d))
+                #self.insert(CTARoute, rdx[key], session)
+                
+            visited.append(key)
+        if to_add:
+            logger.info("adding missing routes.")
+            self.insert(CTARoute, to_add.values(), session)
+            
+        session.commit()
+
+        
+    def merge_arrival_data(self, arrival_data):
+    
+        session = self.new_session()
+        existing_data = session.query(CTAArrival)
+        
+        # index the arrival_data
+        adx = {"{vehicle_no}".format(vehicle_no=d['vehicle_no']):d for d in arrival_data}
+        
+        visited = []
+        to_add = adx.copy()
+        for d in existing_data:
+            key = '{vehicle_no}'.foramt( vehicle_no=existing_data.vehicle_no )
+            if key in visited:
+                logger.warn('duplicate entry {0}'.format(d))
+            elif adx[key]:
+                del to_add[key]
+            else:
+                logger.info("db has extra row {0}".format(d))
+            
+            visited.append(key)
+        
+        if to_add:
+            # whatever is in this list needs to be added to database
+            logger.info("adding missing routes.")
+            self.insert(CTARoute, to_add.values(), session)
+
+        session.commit()
         
         
     def get_route(self, stop_id):
@@ -146,12 +214,11 @@ class DB:
         return results
             
     def get_routes(self, stop_ids):
-        results = self.session.query(CTARoute).filter(CTARoute.stop_id.in_([1672,1691])).all()
+        results = self.session.query(CTARoute).filter(CTARoute.stop_id.in_(stop_ids)).all()
         return results
         
        
-        
-        
+
     def do_exit(self, s):
         return True
         
