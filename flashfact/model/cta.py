@@ -64,22 +64,35 @@ class CTARoute(Base):
             self.stop_name,
             self.stop_id,
             self.direction
-            
             )
+            
+    def __str__(self):
+        return self.__repr__()
     
 
 class CTAArrival(Base):
     __tablename__ = 'cta_bus_arrival'
 
-    id  = Column(Integer, primary_key=True)
-    vehicle_no = Column(Integer)
+    id                  = Column(Integer, primary_key=True)
+    eta                 = Column(Integer())
+    unit                = Column(String())
+    mode                = Column(String())
+    final_destination   = Column(String())
+    next_bus_minutes    = Column(Integer())
+    vehicle_no          = Column(Integer())
+    route_number        = Column(String())
+    route_d_unknown     = Column(String())
+    
     
     def __str__(self):
-        return "CTAArrival <id [{0}] date [{1}] time [{2}] currency [{3}] event [{4}]> ".format( self.id, 
-                 self.ev_date, 
-                 self.ev_time,
-                 self.currency,
-                 self.event_text,
-                 self.previous,
-                 self.forcast)
+        return "CTAArrival <id [{0}] eta [{1}] unit [{2}] final_destination [{3}] next_bus_minutes [{4}] vehicle_no [{5}] route_number [{6}] unknown [{7}] > ".format(         
+                 self.id, 
+                 self.eta, 
+                 self.unit,
+                 self.mode,
+                 self.final_destination,
+                 self.next_bus_minutes,
+                 self.vehicle_no,
+                 self.route_number,
+                 route_d_unknown)
 
