@@ -55,7 +55,7 @@ appstate = state.AppState()
 ##     </stops>
 ## </route>
 
-_ROUTE_URL = 'http://www.ctabustracker.com/bustime/map/getStopsForRouteDirection.jsp?route=49B&direction={direction}'
+_ROUTE_URL = 'http://www.ctabustracker.com/bustime/map/getStopsForRouteDirection.jsp?route={route}&direction={direction}'
 
 
 def fcache(filename, data=None, pickle=False):
@@ -104,8 +104,6 @@ def get_bus_stop_activity(stop_number):
             for v in c.getchildren():
                 results.append({i.tag:i.text for i in v})
         
-       
-     
     return results
 
 
@@ -117,19 +115,29 @@ def get_routes():
         if routes:
             return routes
         
-    routes = {'Northbound':[], 'Southbound':[]}
-    route_xml = requests.get(_ROUTE_URL.format(direction='Southbound')).text
+    routes = []
+    route_xml = requests.get(_ROUTE_URL.format(route='49B', direction='Southbound')).text
     root = ET.fromstring(route_xml)
+    route_number = root.find('id').text
+    tag_conversion = {  'name': 'stop_name',
+                        'id' : 'stop_id',
+                        'rtpiFeedName' :'rtpiFeedName',
+                        }
     for c in root.iter('stop'):
-        route  = {i.tag:i.text for i in c}
-        routes['Southbound'].append(route)
+        route  = {tag_conversion[i.tag]:i.text for i in c}
+        route['route_number'] = route_number
+        route['direction'] = 'Southbound'
+        routes.append(route)
       
             
-    route_xml = requests.get(_ROUTE_URL.format(direction='Northbound')).text
+    route_xml = requests.get(_ROUTE_URL.format(route='49B', direction='Northbound')).text
     root = ET.fromstring(route_xml)
+    route_number = root.find('id').text
     for c in root.iter('stop'):
-        route  = {i.tag:i.text for i in c}
-        routes['Northbound'].append(route)
+        route  = {tag_conversion[i.tag]:i.text for i in c}
+        route['route_number'] = route_number
+        route['direction'] = 'Northbound'
+        routes.append(route)
 
     fcache('/tmp/bustracker.routes.dat', routes, pickle=True)
     
