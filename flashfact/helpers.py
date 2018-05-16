@@ -1,6 +1,7 @@
 import logging
 
-DEFAULT_FORMAT = "%(asctime)s %(name)s %(funcName)s line %(lineno)s %(levelname)s : %(message)s"
+#DEFAULT_FORMAT = "%(asctime)s %(name)s %(funcName)s line %(lineno)s %(levelname)s : %(message)s"
+DEFAULT_FORMAT = "%(asctime)s %(name)s.%(lineno)s %(levelname)s : %(message)s"
 
 def setup_logger(logger, path_name=None, level="INFO", stdout=False, format=DEFAULT_FORMAT):
     formatter = logging.Formatter(format)
