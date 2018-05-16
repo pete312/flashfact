@@ -1,5 +1,7 @@
 import logging
 
+import threading
+
 #DEFAULT_FORMAT = "%(asctime)s %(name)s %(funcName)s line %(lineno)s %(levelname)s : %(message)s"
 DEFAULT_FORMAT = "%(asctime)s %(name)s.%(lineno)s %(levelname)s : %(message)s"
 
@@ -24,3 +26,14 @@ def setup_logger(logger, path_name=None, level="INFO", stdout=False, format=DEFA
     return logger
     
     
+    
+def new_timed_callback(func, args=None, kwargs=None, seconds=0, minutes=0, no_start=False):
+
+    seconds = seconds + (minutes * 60)
+ 
+    timed = threading.Timer(seconds, func, args=args, kwargs=kwargs)
+    print("timer id is", id(timed))
+    if no_start is False:
+        print("starting thread")
+        timed.start()
+    return timed

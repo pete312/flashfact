@@ -72,27 +72,54 @@ class CTARoute(Base):
 
 class CTAArrival(Base):
     __tablename__ = 'cta_bus_arrival'
+    
+    #id                  = Column(Integer, primary_key=True)
+    #eta                 = Column(String())
+    #unit                = Column(String())
+    #mode                = Column(String())
+    #final_destination   = Column(String())
+    #next_bus_minutes    = Column(String())
+    #next_bus_time       = Column(String())
+    #vehicle_no          = Column(String())
+    #route_number        = Column(String())
+    #route_d_unknown     = Column(String())
 
     id                  = Column(Integer, primary_key=True)
+    vehicle             = Column(Integer())
+    stop_id             = Column(Integer())
     eta                 = Column(Integer())
-    unit                = Column(String())
-    mode                = Column(String())
-    final_destination   = Column(String())
+    minutes             = Column(Integer())
     next_bus_minutes    = Column(Integer())
-    vehicle_no          = Column(Integer())
+    final_destination   = Column(String())
+    val_mode            = Column(String())
     route_number        = Column(String())
-    route_d_unknown     = Column(String())
+    val_pu              = Column(String())
+    val_rd              = Column(String())
     
     
     def __str__(self):
-        return "CTAArrival <id [{0}] eta [{1}] unit [{2}] final_destination [{3}] next_bus_minutes [{4}] vehicle_no [{5}] route_number [{6}] unknown [{7}] > ".format(         
-                 self.id, 
-                 self.eta, 
-                 self.unit,
-                 self.mode,
-                 self.final_destination,
-                 self.next_bus_minutes,
-                 self.vehicle_no,
-                 self.route_number,
-                 route_d_unknown)
+        return "CTAArrival <id [{id}] vehicle [{vehicle}] route_number [{route_number}] stop_id [{stop_id}] minutes [{minutes}] val_pu [{val_pu}] eta [{eta}] final_destination [{final_destination}] next_bus_minutes [{next_bus_minutes}] val_mode [{val_mode}] val_rd [{val_rd}] > ".format(         
+                  id                =self.id, 
+                  vehicle           =self.vehicle,
+                  route_number      =self.route_number,
+                  stop_id=          self.stop_id,
+                  minutes           =self.minutes,
+                  val_pu            =self.val_pu,
+                  eta               =self.eta, 
+                  final_destination =self.final_destination,
+                  next_bus_minutes  =self.next_bus_minutes,
+                  val_mode          =self.val_mode,
+                  val_rd            =self.val_rd)
+
+        return "CTAArrival <id [{id}] eta [{eta}] unit [{unit}] final_destination [{final_destination}] next_bus_minutes [{next_bus_minutes}] next_bus_time [{next_bus_time}] mode [{mode}] vehicle_no [{vehicle_no}] route_number [{route_number}] unknown [{route_d_unknown}] > ".format(         
+                  id=self.id, 
+                  eta=self.eta, 
+                  unit=self.unit,
+                  mode=self.mode,
+                  final_destination=self.final_destination,
+                  next_bus_minutes=self.next_bus_minutes,
+                  vehicle_no=self.vehicle_no,
+                  route_number=self.route_number,
+                  route_d_unknown=self.route_d_unknown,
+                  next_bus_time=self.next_bus_minutes)
 

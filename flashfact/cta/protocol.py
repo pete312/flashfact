@@ -91,6 +91,30 @@ def get_bus_stop_activity(stop_number):
     results = []
     cache_file = '/tmp/cta_stop_activity_%s.dat' % stop_number
     logger.info("cache file is " + cache_file)
+    
+    # Trying to make sense of the CTA tags. Tags named val_* are of little use.
+    tag_conversion = {  'v': 'vehicle',
+                        'nextbusonroutetime' : 'eta',
+                        'pt' : 'minutes',
+                        'rn' : 'route_number',
+                        'fd' : 'final_destination',
+                        'pu' : 'val_pu',   
+                        # tag <nextbusminutes> does not appear to change and 
+                        # looks like the tag <pt> is showing this value anyway
+                        'nextbusminutes' : 'next_bus_minutes',
+                        # <pu> tag possibly means prediction unit 
+                        # because its mostly set to value of MINUTES, but it changes 
+                        # to val of APPROACHING when <pt> tag value is '&nbsp;' which
+                        # seems inconsistent (I convert <pt> to 0 for consistency).  
+                        # So perhaps its function is simply a display message field.
+                        'rd' : 'val_rd',
+                        'mode':'val_mode',
+                        'consist':'val_consist',
+                        'cars':'val_cars',
+                        'zone':'val_zone',
+                        'scheduled':'val_scheduled'
+                        }
+    
     if appstate.offline:
         results = fcache(cache_file, pickle=True)
         return results
@@ -99,16 +123,22 @@ def get_bus_stop_activity(stop_number):
         logger.info("get arrival data from " + stop_activity)
         tracking = requests.get(stop_activity)
         if tracking.status_code == 200:
-            logger.info("url text " + tracking.text)
             root = ET.fromstring(tracking.text)
         else:
             raise IOError("no such file "+ root.dump())
+            
+        if root.find('noPredictionMessage') is not None:
+            raise ValueError("no stop found for %s" % stop_number)
         
         for row in root: 
-            logger.info("arrival time {0}".format({i.tag:i.text for i in row}))
-            results.append({i.tag:i.text for i in row})
+            d = {tag_conversion[i.tag]:str(i.text).strip() for i in row}
+            d['stop_id'] = stop_number
+            
+            if d['minutes'] == '&nbsp;': # remove this annoying value
+                d['minutes'] = 0
+            logger.info("arrival time vehicle {vehicle} at stop {stop_id} - {minutes} {val_pu} {eta} onward to {final_destination}".format(**d))
+            results.append(d)
     
-        
     return results
 
 
