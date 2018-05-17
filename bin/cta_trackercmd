@@ -8,6 +8,7 @@ import sys
 import logging
 from cmd  import Cmd
 from os.path import join, dirname, abspath, exists
+from terminaltables import SingleTable
 
 import  model.db
 from model.cta import CTAArrival, CTARoute
@@ -25,39 +26,66 @@ appstate.online = True
 appstate.databasetype = 'sqlite'
 appstate.sqlite_store = '/tmp'
 
+# overrides any logger to stdout setting with False
+appstate.loggerstdout=False
 
 logger = logging.getLogger()
 helpers.setup_logger(logger, stdout=True)
 
 
-print(blue("\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"))
-print("  CTA tracker command submenu. Type main to return to flashfact menu.")
-print(blue("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"))
+blue_line = blue('= - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - =')
+
+print("\n" + blue_line)
+print("  CTA tracker control submenu. Type main to return to flashfact menu")
+print(blue_line)
+
 class CTATracker(Cmd):
     prompt = '(cta tracker command) '
-   
-        
-    
+
     def __init__(self):
         super().__init__()
         self.cache = None
-    
+        self.db = model.db.DB("cta_tracker")
+        filename = '{sqlite_store}/{database}.db'.format(**vars(appstate.instance))
+        self.db.sqlite(filename)
+        
     def do_exit(self, s):
         return True
         
     def do_quit(self, s):
         return True
         
+    def do_reload(self, s):
+        self.do_restart(s)
     def do_restart(self, s):
         '''restart this menu'''
         os.execv( __file__, sys.argv[0:] )
         
-    def do_populate_routes(self, s):
-        pass
-    
-    def do_populate_arrival(self, s):
-        pass
+    def do_test(self, s):
+        self.db.merge_route_data(routes)
         
+    def do_route(self, s):
+        '''get route information and store it.
+            requires a bus route number example 49B.
+        '''
+        
+        if s == "":
+            print("please provide a route number")
+            return
+        route = s.upper().strip()
+         
+        routes = cta.protocol.get_routes(route)
+        results_header = ['stop_name', 'stop_number', 'direction']
+        
+        results = [[i['stop_name'], i['route_number'], i['direction']] for i in routes]
+        results.insert(0, results_header)
+        table = SingleTable(results, title=" Stops in route %s" % route)
+        print( table.table )
+        self.db.merge_route_data(routes)
+        print('')
+    
+        
+
     def do_main(self, s):
         os.execv( dirname(__file__) + '/flashfactcmd', sys.argv[0:] )
         
