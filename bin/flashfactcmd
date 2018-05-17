@@ -1,0 +1,91 @@
+#!/bin/env python3
+
+
+import os
+import sys
+from os.path import join, dirname, abspath, exists
+from cmd  import Cmd
+import  model.db
+from model.cta import CTAArrival, CTARoute
+from state import AppState 
+import logging
+
+import helpers
+
+appstate = AppState()  
+appstate.datadir = abspath( dirname(__file__) ) # make the tests dir the datadir
+appstate.offline = False                        # pull all data from URL sources.
+
+appstate.database = 'flashfact'
+appstate.online = True
+appstate.databasetype = 'sqlite'
+appstate.sqlite_store = '/tmp'
+
+
+logger = logging.getLogger()
+helpers.setup_logger(logger, stdout=True)
+
+print("\n========================================================================")
+print("* Welcome to flashfact command menu. If lost try help or autocomplete. *")
+print("========================================================================")
+class FlashFact(Cmd):
+    prompt = '(flashfact command) '
+    
+    
+    def do_create_db(self, s):
+        '''create the main database'''
+        db = model.db.DB("ctatest")
+        
+        if appstate.databasetype == "sqlite":
+            filename = '{sqlite_store}/{database}.db'.format(**vars(appstate.instance))
+            db.sqlite(filename) # select method as sqlite with filename
+        db.create()
+    
+    def __init__(self):
+        super().__init__()
+        self.cache = None
+    
+    def do_exit(self, s):
+        return True
+        
+    def do_quit(self, s):
+        return True
+        
+    def do_test(self, s):
+        '''Whatever tests I\'m doing '''
+        print('{sqlite_store}/{database}.db'.format(**vars(appstate.instance)))
+        
+    def do_restart(self, s):
+        '''restart this menu'''
+        os.execv( __file__, sys.argv[0:] )
+        
+    def do_cta_tracker(self, s):
+        '''Enter the CTA tracker submenu'''
+        os.execv( dirname(__file__) + '/cta_trackercmd', sys.argv[0:] )
+        
+    def do_create_sqlite_database(self):
+        pass
+    #def do_setup_database(self, cmd):
+    #    if cmd == "":
+    #        database_name = input("OK what filename for this database? ")
+    #    if not database_name.endswith('.db') :
+    #        database_name = database_name + '.db'
+    #        
+    #    
+    #        
+    #    print ("ok we will set the database to of", appstate.datadir + "/" + database_name + ' and call it '+ database_name[:3])
+    #    
+        
+        
+    
+
+if __name__ == "__main__":
+     
+    menu = FlashFact()
+    
+    menu.cmdloop()
+    
+  
+        
+        
+    
