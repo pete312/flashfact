@@ -1,0 +1,86 @@
+#!/bin/env python3
+
+# cta tracker control 
+# Pete Moore Mar 2018
+
+import os
+import sys
+import logging
+from cmd  import Cmd
+from os.path import join, dirname, abspath, exists
+
+import  model.db
+from model.cta import CTAArrival, CTARoute
+from state import AppState 
+import helpers
+import cta.protocol
+from mycolor import blue
+
+appstate = AppState()  
+appstate.datadir = abspath( dirname(__file__) ) # make the tests dir the datadir
+appstate.offline = False                        # pull all data from URL sources.
+
+appstate.database = 'flashfact'
+appstate.online = True
+appstate.databasetype = 'sqlite'
+appstate.sqlite_store = '/tmp'
+
+
+logger = logging.getLogger()
+helpers.setup_logger(logger, stdout=True)
+
+
+print(blue("\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"))
+print("  CTA tracker command submenu. Type main to return to flashfact menu.")
+print(blue("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"))
+class CTATracker(Cmd):
+    prompt = '(cta tracker command) '
+   
+        
+    
+    def __init__(self):
+        super().__init__()
+        self.cache = None
+    
+    def do_exit(self, s):
+        return True
+        
+    def do_quit(self, s):
+        return True
+        
+    def do_restart(self, s):
+        '''restart this menu'''
+        os.execv( __file__, sys.argv[0:] )
+        
+    def do_populate_routes(self, s):
+        pass
+    
+    def do_populate_arrival(self, s):
+        pass
+        
+    def do_main(self, s):
+        os.execv( dirname(__file__) + '/flashfactcmd', sys.argv[0:] )
+        
+   
+    #def do_setup_database(self, cmd):
+    #    if cmd == "":
+    #        database_name = input("OK what filename for this database? ")
+    #    if not database_name.endswith('.db') :
+    #        database_name = database_name + '.db'
+    #        
+    #    
+    #        
+    #    print ("ok we will set the database to of", appstate.datadir + "/" + database_name + ' and call it '+ database_name[:3])
+    #    
+        
+    
+    
+
+if __name__ == "__main__":
+    menu = CTATracker()
+    menu.cmdloop()
+    
+  
+        
+        
+    

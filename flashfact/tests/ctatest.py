@@ -1,5 +1,7 @@
 #!/bin/env python3
 
+# unit tests for flashfact
+
 from os.path import join, dirname, abspath, exists
 import logging
 import unittest 

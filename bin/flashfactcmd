@@ -1,5 +1,7 @@
 #!/bin/env python3
 
+# flashfact control 
+# Pete Moore Mar 2018
 
 import os
 import sys
@@ -11,6 +13,7 @@ from state import AppState
 import logging
 
 import helpers
+from mycolor import blue
 
 appstate = AppState()  
 appstate.datadir = abspath( dirname(__file__) ) # make the tests dir the datadir
@@ -25,21 +28,30 @@ appstate.sqlite_store = '/tmp'
 logger = logging.getLogger()
 helpers.setup_logger(logger, stdout=True)
 
-print("\n========================================================================")
-print("* Welcome to flashfact command menu. If lost try help or autocomplete. *")
-print("========================================================================")
+print(blue("\n========================================================================"))
+print(blue("*") + " Welcome to flashfact command menu. If lost try help or autocomplete. "+blue("*"))
+print(blue("========================================================================"))
 class FlashFact(Cmd):
     prompt = '(flashfact command) '
     
     
     def do_create_db(self, s):
-        '''create the main database'''
+        '''Non-destructive creation of main database. i.e. If database already exists, nothing happens.'''
         db = model.db.DB("ctatest")
         
         if appstate.databasetype == "sqlite":
             filename = '{sqlite_store}/{database}.db'.format(**vars(appstate.instance))
             db.sqlite(filename) # select method as sqlite with filename
         db.create()
+        print("sqlite database location {filename}".format(filename=filename))
+        
+    def do_drop_and_create(self,s):
+        if s != 'y':
+            if input("are you sure you want to recreate database and lose all data?").lower().startswith('y'):
+                print("dropping database")
+                filename = '{sqlite_store}/{database}.db'.format(**vars(appstate.instance))
+                os.remove(filename)
+                self.do_create_db("")
     
     def __init__(self):
         super().__init__()
@@ -63,8 +75,7 @@ class FlashFact(Cmd):
         '''Enter the CTA tracker submenu'''
         os.execv( dirname(__file__) + '/cta_trackercmd', sys.argv[0:] )
         
-    def do_create_sqlite_database(self):
-        pass
+
     #def do_setup_database(self, cmd):
     #    if cmd == "":
     #        database_name = input("OK what filename for this database? ")
@@ -82,7 +93,6 @@ class FlashFact(Cmd):
 if __name__ == "__main__":
      
     menu = FlashFact()
-    
     menu.cmdloop()
     
   
