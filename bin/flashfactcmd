@@ -28,9 +28,10 @@ appstate.sqlite_store = '/tmp'
 logger = logging.getLogger()
 helpers.setup_logger(logger, stdout=True)
 
-print(blue("\n========================================================================"))
-print(blue("*") + " Welcome to flashfact command menu. If lost try help or autocomplete. "+blue("*"))
-print(blue("========================================================================"))
+blue_line = blue("=============================================================")
+print("\n"+blue_line)
+print( blue("*") + " flashfact control menu. If lost try help or autocomplete. " + blue("*"))
+print(blue_line)
 class FlashFact(Cmd):
     prompt = '(flashfact command) '
     
