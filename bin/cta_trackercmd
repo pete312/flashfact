@@ -75,17 +75,33 @@ class CTATracker(Cmd):
         route = s.upper().strip()
          
         routes = cta.protocol.get_routes(route)
-        results_header = ['stop_name', 'stop_number', 'direction']
-        
-        results = [[i['stop_name'], i['route_number'], i['direction']] for i in routes]
+        results_header = ['stop_name', 'stop_id', 'direction']
+
+        results = [[i['stop_name'], i['stop_id'], i['direction']] for i in routes]
         results.insert(0, results_header)
         table = SingleTable(results, title=" Stops in route %s" % route)
         print( table.table )
         self.db.merge_route_data(routes)
         print('')
+        
     
         
-
+    def do_arrival(self, s):
+        '''get bus stop activity and store it in database 
+            requires a bus stop number.
+        '''
+        try: 
+            stop = int(s)
+        except ValueError: 
+            print("please give a bus stop number.")
+        stop_activity = cta.protocol.get_bus_stop_activity(stop)
+        activity_header = ['eta','minutes','vehicle','final_destination']
+        results = [[i['eta'], i['minutes'],i['vehicle'], i['final_destination']] for i in stop_activity]
+        results.insert(0,activity_header)
+        table = SingleTable(results, title="Route activity for stop id %s" % stop)
+        print(table.table)
+        self.db.merge_arrival_data(stop_activity)
+        
     def do_main(self, s):
         os.execv( dirname(__file__) + '/flashfactcmd', sys.argv[0:] )
         
