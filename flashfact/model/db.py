@@ -68,6 +68,7 @@ class DB:
         self.Session = sessionmaker(self.engine)
         self.ready = True
         
+    
     def create(self):
         if not self.ready: 
             raise DatabaseNotReady()
@@ -166,7 +167,7 @@ class DB:
         to_add = rdx.copy()
         for d in existing_data:
             key = "{route}_{stop}".format(route=d.route_number, stop=d.stop_id) 
-            print("row id", d.id, key, end=' ' )
+            #print("row id", d.id, key, end=' ' )
             if key in visited:
                 logger.warning("duplicate data {0}".format(d))
             elif key in rdx:
