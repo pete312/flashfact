@@ -142,7 +142,7 @@ def get_bus_stop_activity(stop_number):
     return results
 
 
-def get_routes():
+def get_routes(route_number='49B'):
     
     # consider returning cache results
     if appstate.offline:
@@ -151,7 +151,7 @@ def get_routes():
             return routes
         
     routes = []
-    route_xml = requests.get(_ROUTE_URL.format(route='49B', direction='Southbound')).text
+    route_xml = requests.get(_ROUTE_URL.format(route=route_number, direction='Southbound')).text
     root = ET.fromstring(route_xml)
     route_number = root.find('id').text
     tag_conversion = {  'name': 'stop_name',
@@ -165,7 +165,7 @@ def get_routes():
         routes.append(route)
       
             
-    route_xml = requests.get(_ROUTE_URL.format(route='49B', direction='Northbound')).text
+    route_xml = requests.get(_ROUTE_URL.format(route=route_number, direction='Northbound')).text
     root = ET.fromstring(route_xml)
     route_number = root.find('id').text
     for c in root.iter('stop'):
