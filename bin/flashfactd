@@ -1,0 +1,79 @@
+#!/bin/env python3
+import threading
+from time import sleep
+from bottle import route, run, template, request
+import bottle
+import signal
+import os
+
+from state import AppState
+
+appstate = AppState()
+
+
+timers = []
+@route("/")
+def index():
+    return "K"
+    
+    
+@route("/timers")
+def timer():
+    return appstate.timers()
+    
+class Countdown(threading.Timer):
+    def __init__(self, seconds, func, args=(), kwargs={}):
+        threading.Timer(seconds, func, args=args, kwargs=kwargs)
+
+class QueueClass():
+    def __init__(self):
+        self.qclass = {}
+        
+    def add(self, class_type, item ):
+        if class_type not in self.qclass:
+            self.qclass[class_type] = item
+        else:
+            self.qclass.append(item)
+
+class Update(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self._stop = False
+        
+    def run(self):
+        while 1:
+            sleep(2)
+            print("here")
+            if self._stop:
+                break
+        
+    def stop(self):
+        self._stop = True
+        
+def task():
+    print("running task")
+
+def state_reload(a,b):
+    appstate.load_state()
+    for i in threading.enumerate():
+        print(i)
+    
+    
+def test():
+    filename =  '%s/%s' % ( os.getenv("HOME", '/tmp'), '.flashfactrc')
+
+    #appstate.load_state()
+    appstate.save_state(filename)
+
+if __name__ == "__main__":
+
+    signal.signal(40, state_reload)
+    qc = QueueClass()
+    
+    qc.add( Countdown,  Countdown(2, task) )
+    appstate.timers = []
+    #bottle.run(host='0.0.0.0', port=8118, debug=True)
+    bottle.run(host='0.0.0.0', port=8118)
+        
+        
+    
