@@ -7,10 +7,12 @@ import os
 import sys
 from os.path import join, dirname, abspath, exists
 from cmd  import Cmd
-import  model.db
+import model.db
 from model.cta import CTAArrival, CTARoute
 from state import AppState 
 import logging
+from subprocess import Popen
+import signal
 
 import helpers
 from mycolor import blue
@@ -23,6 +25,7 @@ appstate.database = 'flashfact'
 appstate.online = True
 appstate.databasetype = 'sqlite'
 appstate.sqlite_store = '/tmp'
+appstate.new_thing = [1,2,3]
 
 
 logger = logging.getLogger()
@@ -34,8 +37,12 @@ print( blue("*") + " flashfact control menu. If lost try help or autocomplete. "
 print(blue_line)
 class FlashFact(Cmd):
     prompt = '(flashfact command) '
+    daemonpid = None
     
-    
+    def __init__(self):
+        super().__init__()
+        self.cache = None
+        
     def do_create_db(self, s):
         '''Non-destructive creation of main database. i.e. If database already exists, nothing happens.'''
         db = model.db.DB("ctatest")
@@ -54,40 +61,67 @@ class FlashFact(Cmd):
                 os.remove(filename)
                 self.do_create_db("")
     
-    def __init__(self):
-        super().__init__()
-        self.cache = None
+    def emptyline(self):
+        pass
     
     def do_exit(self, s):
+        appstate.save_state()
         return True
         
+        
+    def do_appstate(self, s):
+        appstate.dump_state()
+        
+    def do_loadstate(self,s):
+        appstate.load_state()
+        
+        
     def do_quit(self, s):
-        return True
+        return self.do_exit()
         
     def do_test(self, s):
         '''Whatever tests I\'m doing '''
         print('{sqlite_store}/{database}.db'.format(**vars(appstate.instance)))
         
+        for i in vars(appstate.instance):
+            print(i)
+        
+        filename =  '%s/%s' % ( os.getenv("HOME", '/tmp'), '.flashfactrc')
+        print("state file is", filename)
+        appstate.dump_state()
+        appstate.save_state()
+        
     def do_restart(self, s):
         '''restart this menu'''
         os.execv( __file__, sys.argv[0:] )
+        
+    def do_reload(self,s):
+        return self.do_restart(s)
         
     def do_cta_tracker(self, s):
         '''Enter the CTA tracker submenu'''
         os.execv( dirname(__file__) + '/cta_trackercmd', sys.argv[0:] )
         
-
-    #def do_setup_database(self, cmd):
-    #    if cmd == "":
-    #        database_name = input("OK what filename for this database? ")
-    #    if not database_name.endswith('.db') :
-    #        database_name = database_name + '.db'
-    #        
-    #    
-    #        
-    #    print ("ok we will set the database to of", appstate.datadir + "/" + database_name + ' and call it '+ database_name[:3])
-    #    
+    def do_start_deamon(self,s):
+        if self.daemonpid:
+            print
+        self.daemonpid = Popen(["flashfactd"]).pid
+        #self.daemonpid = Popen(["flashfactd", ">>",  "/dev/null"]).pid
+        appstate.daemonpid = self.daemonpid
+        appstate.save_state()
+        print(self.daemonpid)
         
+    def do_stop_daemon(self,s):
+        #if self.daemonpid and os.kill(self.daemonpid, 0):
+        os.kill(self.daemonpid, signal.SIGINT)
+        self.daemonpid = None
+        appstate.save_state()
+        
+    def do_tickle(self, s):
+        if self.daemonpid:
+            os.kill(self.daemonpid, 40)
+            
+               
         
     
 
