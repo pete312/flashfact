@@ -173,7 +173,25 @@ def get_routes(route_number='49B'):
         route['route_number'] = route_number
         route['direction'] = 'Northbound'
         routes.append(route)
-
+        
+    route_xml = requests.get(_ROUTE_URL.format(route=route_number, direction='Eastbound')).text
+    root = ET.fromstring(route_xml)
+    route_number = root.find('id').text
+    for c in root.iter('stop'):
+        route  = {tag_conversion[i.tag]:i.text for i in c}
+        route['route_number'] = route_number
+        route['direction'] = 'Eastbound'
+        routes.append(route)
+        
+    route_xml = requests.get(_ROUTE_URL.format(route=route_number, direction='Westbound')).text
+    root = ET.fromstring(route_xml)
+    route_number = root.find('id').text
+    for c in root.iter('stop'):
+        route  = {tag_conversion[i.tag]:i.text for i in c}
+        route['route_number'] = route_number
+        route['direction'] = 'Westbound'
+        routes.append(route)
+        
     fcache('/tmp/bustracker.routes.dat', routes, pickle=True)
     
     return routes
