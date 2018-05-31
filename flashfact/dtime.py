@@ -12,6 +12,8 @@ date_format = is1_date
 
 
 def validate_date_format(sdate, default_format):
+    if type(default_format) == str:
+        default_format = {'fmt':default_format}
 
     valid_date = None
     for format in date_formats:
@@ -26,6 +28,11 @@ def validate_date_format(sdate, default_format):
     
     
     
+def stime_2datetime(timestring):
+    t = datetime.strptime(timestring, "%H:%M:%S")
+    return datetime(*(datetime.now().timetuple()[:3] + (t.hour, t.minute, t.second)))
+    
+
 
     
 def get_sundays_date(when='last'):
