@@ -7,7 +7,6 @@ us_date =  {'fmt':'%m-%d-%Y',  'txt':'US MM-DD-YYYY'}
 date_formats = (is1_date, is2_date, us_date)
 default_format = date_formats[0]
 
-date_format = is1_date
 
 
 
@@ -23,10 +22,33 @@ def validate_date_format(sdate, default_format):
         except ValueError:
             pass
             
-    print(valid_date)
     return valid_date
     
     
+def get_seconds_until( target, reference_time=None ):
+    ''' returns a float representing seconds from one time to the current time or 
+        some other reference time.
+        
+        target : the desired time to compare. 2 formats are supported: 
+            string format of '%Y-%m-%d %H:%M:%S' Note: sub-second resolution is not supported.
+            standard datetime() format supports sub-second resolution.
+            
+        reference_time :  optional time difference to compare to. must be in datetime format
+    '''
+    if isinstance(target, str):
+        try: # try convert into valid format
+            target = datetime.strptime(target, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            raise ValueError( "target timestring '{0}' must have format of '%Y-%m-%d %H:%M:%S'".format(target) )
+    elif not isinstance(target, datetime):
+        raise ValueError("target must be a type of datetime or str format of '%Y-%m-%d %H:%M:%S'")
+
+        
+    if reference_time == None:
+        if not isinstance(reference_time, datetime):
+            raise TypeError("reference_time must be datetime" )
+        reference_time = datetime.now()
+    return (target - reference_time).total_seconds()
     
 def stime_2datetime(timestring):
     t = datetime.strptime(timestring, "%H:%M:%S")

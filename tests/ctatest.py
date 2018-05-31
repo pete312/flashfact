@@ -5,9 +5,14 @@
 from os.path import join, dirname, abspath, exists
 import logging
 import unittest 
-import flashfact.helpers
+from time import sleep
+from datetime import datetime, timedelta
+import time
 
-import flashfact.cta.protocol 
+# app libs for testing
+import helpers
+
+import cta.protocol 
 import  model.db
 from model.cta import CTAArrival, CTARoute
 from state import AppState 
@@ -18,11 +23,46 @@ appstate.offline = False                        # pull all data from URL sources
 
 logger = logging.getLogger()
 helpers.setup_logger(logger, stdout=True)
-import time
+
+
+import dtime
 
 def assert_path(filename):
     return exists(filename)
+    
+class TestDTime(unittest.TestCase):
+    def test_time_conversions(self):
+        now = datetime.now()
+        dt_5_seconds = now + timedelta(0,5)
+        td_5_seconds = dt_5_seconds - now
+        float_5_seconds = td_5_seconds.total_seconds()
+        
+        # make sure the 5 second assumption is correct
+        self.assertEqual( float_5_seconds , 5.0 )
+        
+        # check datetime mode input of get_seconds_until
+        test_result = dtime.get_seconds_until(dt_5_seconds, now)
+        self.assertEqual( test_result , 5.0 )
+        
+        # check string mode input of get_seconds_until 
+        
+        # For elegance reasons get_seconds_until does not support sub second 
+        # timestamps in string mode. Only in datestamp mode.
+        # But datetime.now() has microseconds and it will be unlikely to pass any 
+        # assertEqual() test without removing microseconds from the datetime.now()
+        # So, round the datetime variable "now" to the last second by removing 
+        # the microseconds portion.
+        now = datetime(*now.timetuple()[:6]) 
+        
+        timestring = dt_5_seconds.strftime("%Y-%m-%d %H:%M:%S")
+        test_result = dtime.get_seconds_until(timestring, now)
+        self.assertEqual( test_result , 5.0 )
 
+        badtimestring = dt_5_seconds.strftime("%Y-%m-%d %H:%M")
+        self.assertRaises(ValueError,  dtime.get_seconds_until, (badtimestring, now) )
+        self.assertRaises(ValueError,  dtime.get_seconds_until, (None, now) )
+        
+       
 
 class CTAProtocolTest(unittest.TestCase):
 
@@ -100,8 +140,7 @@ def get_test_arrival_data(stop_num):
     
     
     
-from time import sleep
-from datetime import datetime
+
 import threading
 def test_timed(*a, **ka):
     print('starting test_timed at {now} called with :'.format(now=datetime.now()))
