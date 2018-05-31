@@ -38,12 +38,12 @@ class Event(threading.Thread):
 
     
 class Scheduler(threading.Thread):
-    def __init__(self, event_td=None, seconds_left=None, callback=None ):
+    def __init__(self, event_td=None, seconds_left=None, callback=None, mainantance_period=5 ):
         threading.Thread.__init__(self)
         self.schedules = []
         self.history = []
         self._maint()
-        
+        self._maint_period = mainantance_period
         
     def run(self):
         while 1:
@@ -58,7 +58,7 @@ class Scheduler(threading.Thread):
         self.schedules = [i for i in self.schedules if i.is_alive() ]
         self.history += done
         
-        t = threading.Timer(5, self._maint)
+        t = threading.Timer(self._maint_period, self._maint)
         t.name = 'maint'
         t.start()
         
