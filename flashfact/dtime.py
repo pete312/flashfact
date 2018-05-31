@@ -25,7 +25,7 @@ def validate_date_format(sdate, default_format):
     return valid_date
     
     
-def get_seconds_until( target, reference_time=None ):
+def get_seconds_until( target, reference_time=None, only_future=True ):
     ''' returns a float representing seconds from one time to the current time or 
         some other reference time.
         
@@ -45,15 +45,26 @@ def get_seconds_until( target, reference_time=None ):
 
         
     if reference_time == None:
-        if not isinstance(reference_time, datetime):
-            raise TypeError("reference_time must be datetime" )
         reference_time = datetime.now()
-    return (target - reference_time).total_seconds()
+    elif not isinstance(reference_time, datetime):
+        raise TypeError("reference_time must be datetime" )
+    seconds = (target - reference_time).total_seconds()
+    if seconds < 0 and only_future:
+        seconds = (target - (reference_time + timedelta(1))).total_seconds() 
+    return seconds
     
 def stime_2datetime(timestring):
     t = datetime.strptime(timestring, "%H:%M:%S")
     return datetime(*(datetime.now().timetuple()[:3] + (t.hour, t.minute, t.second)))
     
+    
+def get_datetime_from_timestring( timestring, format=None ):
+    #t = datetime.strptime( timestring , "%H:%M:%S")
+    if format:  
+        t = datetime.strptime( timestring , format)
+    else:
+        t = datetime.strptime( timestring , "%H:%M:%S")
+    return datetime(*(datetime.now().timetuple()[:3] + (t.hour, t.minute, t.second)))
 
 
     

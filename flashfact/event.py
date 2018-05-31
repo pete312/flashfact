@@ -38,12 +38,16 @@ class Event(threading.Thread):
 
     
 class Scheduler(threading.Thread):
-    def __init__(self, event_td=None, seconds_left=None, callback=None, mainantance_period=5 ):
+
+    def __init__(self, event_td=None, seconds_left=None, callback=None, mainantance_period=5, debug=False ):
         threading.Thread.__init__(self)
         self.schedules = []
         self.history = []
-        self._maint()
         self._maint_period = mainantance_period
+        self.debug = True
+        
+        self._maint()
+        
         
     def run(self):
         while 1:
@@ -54,10 +58,13 @@ class Scheduler(threading.Thread):
     # todo : change maint from timer based to event based.
     def _maint(self):
         '''clean up events that have executed'''
+        if self.debug:
+            for i in self.schedules:
+                print("event ", i )
         done = [i for i in self.schedules if not i.is_alive() ]
         self.schedules = [i for i in self.schedules if i.is_alive() ]
-        self.history += done
-        
+        self.history += done 
+
         t = threading.Timer(self._maint_period, self._maint)
         t.name = 'maint'
         t.start()
@@ -66,6 +73,8 @@ class Scheduler(threading.Thread):
     def add_schedule(self, when, what, *args, **kwargs):
             
         t = threading.Timer(when, what, args, kwargs)
+        if self.debug:
+            print("adding timer ", t, when )
         if 'thread_name' in kwargs:
             t.name = kwargs['thread_name']
         else:

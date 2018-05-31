@@ -1,20 +1,41 @@
 #!/bin/env python3
 import threading
 from time import sleep
-from bottle import route, run, template, request
+from bottle import route, run, template, request, response
 import bottle
 import signal
 import os
 
 from state import AppState
+import dtime
+import event 
 
 appstate = AppState()
+scheduler = event.Scheduler()
 
 
 timers = []
-@route("/")
-def index():
-    return "K"
+
+def execute_timer(*args, **kwargs):
+    print("execute_timer %s %s" % (args, kwargs))
+    
+@route("/new_timer/<name>=<time>")
+def new_timer(name,time):
+    dt = None
+    
+    try:
+        dt = dtime.get_datetime_from_timestring(time)
+    except ValueError:
+        dt = None
+        
+    print("val ", dt, type(dt))
+    if dt:  
+        # get seconds until now.
+        name2 = "%s @ %s" % (name ,time)
+        scheduler.add_schedule(dtime.get_seconds_until(dt), execute_timer, timer=name2, thread_name=name2)
+
+        
+    return "{name}={time}<br>here".format( name=name, time=dt )
     
     
 @route("/timers")
@@ -64,6 +85,7 @@ def test():
 
     #appstate.load_state()
     appstate.save_state(filename)
+    
 
 if __name__ == "__main__":
 
@@ -72,8 +94,9 @@ if __name__ == "__main__":
     
     qc.add( Countdown,  Countdown(2, task) )
     appstate.timers = []
-    #bottle.run(host='0.0.0.0', port=8118, debug=True)
-    bottle.run(host='0.0.0.0', port=8118)
+    
+    bottle.run(host='0.0.0.0', port=8118, debug=True, reloader=True)
+    #bottle.run(host='0.0.0.0', port=8118)
         
         
     
