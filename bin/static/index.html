@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+ <link rel="stylesheet" href="/src/jq/jquery-ui.min.css">  
+ <script src="/src/jq/external/jquery/jquery.js" > </script>
+ <script src="/src/jq/jquery-ui.min.js" > </script>
+ 
+<style>
+.sidenav {
+    height: 100%; /* Full-height: remove this if you want "auto" height */
+    width: 160px; /* Set the width of the sidebar */
+    position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+    z-index: 1; /* Stay on top */
+    top: 0; /* Stay at the top */
+    left: 0;
+    background-color: #111; /* Black */
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 20px;
+}
+ 
+ 
+table {
+    //background-color: lightblue;  
+    border-style: solid ; 
+    color: white;
+    width: 80%
+}
+
+
+
+body { 
+    background: url("image/blue-2.png") no-repeat fixed center , url("image/circutboard.jpg") no-repeat fixed center; 
+    //background: url("image/blue-2.png") no-repeat fixed center , url("image/smallworld.jpg") no-repeat fixed center; 
+    background-size: 100% 100%;
+    //background-color: black;
+    width: auto;
+    height: auto;
+    background-blend-mode: multiply;
+}
+
+#title1 { 
+    background: lightgreen url("image/circutboard.jpg");
+    //background-image: url("image/blue-2.jpg");
+    //background-color: black; 
+    font-family: Arial, Helvetica, sans-serif ; 
+    width: 80% ;
+    color: white;
+    background-size: 100%;
+    background-blend-mode: multiply;
+}
+#timeLocal { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+#timeUTC { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+#timeISO { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+
+</style>
+    
+</head>
+<body>
+    <script>
+    
+    var totalRows = 0;
+    var timerInterval = null;
+    var addRowInterval = null;
+    
+    function addRow(){
+        if ( totalRows > 25 ){ clearInterval( addRowInterval); }
+        totalRows += 1;
+        //eventTable.append('<tr><td>h<td>g<td>');
+        $('#eventTable tr:last').after('<tr><td>'+ Date() +'<td>test event<td>stuff to do ');
+    }
+    
+    function t1(){
+        var d = new Date();
+        $('#timeISO').text(d.toISOString());
+        $('#timeUTC').text( d.toUTCString());
+        $('#timeLocal').text(d.toLocaleDateString() + " " + d.toLocaleTimeString() );
+    }
+    
+    $(document).ready( function(){
+    
+        t1();
+
+        //$('#timeTag').text('new time');
+        timerInterval = setInterval( t1 , 1000);
+        addRowInterval = setInterval( addRow, 20);
+    });
+    </script>
+    <h2 id='title1'>  Local : <span id='timeLocal'></span>  UTC : <span id='timeUTC'></span>ISO  : <span id='timeISO'></span></h2>
+    
+    <table id='eventTable'>
+    <th>Event time<th> name <th> content <th><tr>
+    
+    </table>
+    
+    
+</body>
+</html>
