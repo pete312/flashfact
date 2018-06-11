@@ -1,5 +1,4 @@
 
-from dtime import *
 import state
 import logging
 import pickle as _pickle
@@ -7,6 +6,7 @@ import os.path
 import xml.etree.ElementTree as ET
 import requests
 from random import random
+import timefunc 
 logger = logging.getLogger(__name__)
 
 appstate = state.AppState()
@@ -142,7 +142,7 @@ def get_bus_stop_activity(stop_number):
     return results
 
 
-def get_routes(route_number='49B'):
+def get_routes(route_number):
     
     # consider returning cache results
     if appstate.offline:
