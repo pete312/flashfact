@@ -1,7 +1,8 @@
-import dtime
 import threading
 import queue
 from time import sleep
+
+import timefunc
 
 class Event(threading.Thread):
     def __init__(self, event_td=None, seconds_left=None, callback=None ):
@@ -55,7 +56,7 @@ class Scheduler(threading.Thread):
             for s in schedules:
                 print(s.threadName)
     
-    # todo : change maint from timer based to event based.
+    # TODO: change maint from timer based to event based.
     def _maint(self):
         '''clean up events that have executed'''
         if self.debug:
@@ -84,6 +85,10 @@ class Scheduler(threading.Thread):
         
     def enumerate(self):
         return self.schedules
+        
+    def add_event(self, event):
+        if not isinstance(event, Event):
+            raise TypeError("require a ")
         
         
     def show_schedule(self):
