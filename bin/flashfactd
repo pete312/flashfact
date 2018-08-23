@@ -1,15 +1,21 @@
 #!/bin/env python3
 import threading
 from time import sleep
-from bottle import route, run, template, request, response
-import bottle
+
+from flask import Flask
+from flask import url_for, render_template, redirect, request
+
+#from bottle import route, run, template, request, response, static_file
+#import bottle
 import signal
 import os
+from os.path import dirname
 
 from state import AppState
-import dtime
+import timefunc
 import event 
 
+app = Flask(__name__)
 appstate = AppState()
 scheduler = event.Scheduler()
 
@@ -19,12 +25,22 @@ timers = []
 def execute_timer(*args, **kwargs):
     print("execute_timer %s %s" % (args, kwargs))
     
-@route("/new_timer/<name>=<time>")
+@app.route('/')
+def default():
+    print('here')
+    return 'OK'
+    
+@app.route("/timers",methods=["POST"])
+def timers_post():
+    print (request.forms.get('username'))
+    return 
+    
+@app.route("/new_timer/<name>=<time>")
 def new_timer(name,time):
     dt = None
     
     try:
-        dt = dtime.get_datetime_from_timestring(time)
+        dt = timefunc.get_datetime_from_timestring(time)
     except ValueError:
         dt = None
         
@@ -32,44 +48,110 @@ def new_timer(name,time):
     if dt:  
         # get seconds until now.
         name2 = "%s @ %s" % (name ,time)
-        scheduler.add_schedule(dtime.get_seconds_until(dt), execute_timer, timer=name2, thread_name=name2)
+        scheduler.add_schedule(timefunc.get_seconds_until(dt), execute_timer, timer=name2, thread_name=name2)
 
         
     return "{name}={time}<br>here".format( name=name, time=dt )
     
+   
+   
+stencil = '''
+<!DOCTYPE html> 
+<html>
+<head>
+	<title>{title}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/{jq_version}/jquery.mobile-{jq_version}.min.css" />
+	<script src="http://code.jquery.com/jquery-{jq_version}.min.js"></script>
+	<script src="http://code.jquery.com/mobile/{jq_version}/jquery.mobile-{jq_version}.min.js"></script>
+</head>
+<body>
+    {code}
+	{content}
+</body>
+</html>
+'''
+
+@app.route('/test')
+def aaaa():
+ 
+    content='''<button id ="ajaxtest">hello</button>'''
     
-@route("/timers")
+    code='''
+    
+$(function(){
+    $("#ajaxtest").click(function(){
+        $.ajax({url: "demo_test.txt", success: function(result){
+            $("#div1").html(result);
+        }});
+    });
+});
+        
+    '''
+
+    page = stencil.format(code=code, title='test title', jq_version='1.4.5', content=content)
+    return page
+    
+    
+@app.route("/timers")
 def timer():
-    return appstate.timers()
+    return str(appstate.timers)
     
-class Countdown(threading.Timer):
-    def __init__(self, seconds, func, args=(), kwargs={}):
-        threading.Timer(seconds, func, args=args, kwargs=kwargs)
+    
 
-class QueueClass():
-    def __init__(self):
-        self.qclass = {}
-        
-    def add(self, class_type, item ):
-        if class_type not in self.qclass:
-            self.qclass[class_type] = item
-        else:
-            self.qclass.append(item)
+       
+    
+#@app.route('/<filepath:path>')
+#def server_static(filepath):
+#    return static_file(filepath, root=dirname(__file__) + "/static")
+    
 
-class Update(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self._stop = False
+
+@app.route('/<filepath>')
+def server_static(filepath):
+    print(filepath)
+    return redirect(url_for('static', filename='index.html'))
+    
+@app.route("/loggin")
+def login(methods=['POST','GET']):
+    print("here i am", request.method)
+    print (request.method , request.form['name'] )
+    if request.method == "POST":
+        return "POST"
+    
+    elif request.method == "POST":
+        return "GET"
+       
+    
+    
+# class Countdown(threading.Timer):
+    # def __init__(self, seconds, func, args=(), kwargs={}):
+        # threading.Timer(seconds, func, args=args, kwargs=kwargs)
+
+# class QueueClass():
+    # def __init__(self):
+        # self.qclass = {}
         
-    def run(self):
-        while 1:
-            sleep(2)
-            print("here")
-            if self._stop:
-                break
+    # def add(self, class_type, item ):
+        # if class_type not in self.qclass:
+            # self.qclass[class_type] = item
+        # else:
+            # self.qclass.append(item)
+
+# class Update(threading.Thread):
+    # def __init__(self):
+        # threading.Thread.__init__(self)
+        # self._stop = False
         
-    def stop(self):
-        self._stop = True
+    # def run(self):
+        # while 1:
+            # sleep(2)
+            # print("here")
+            # if self._stop:
+                # break
+        
+    # def stop(self):
+        # self._stop = True
         
 def task():
     print("running task")
@@ -90,12 +172,13 @@ def test():
 if __name__ == "__main__":
 
     signal.signal(40, state_reload)
-    qc = QueueClass()
+    # qc = QueueClass()
     
-    qc.add( Countdown,  Countdown(2, task) )
+    # qc.add( Countdown,  Countdown(2, task) )
     appstate.timers = []
+    #appstate.timers[ model.get_timers() ]
     
-    bottle.run(host='0.0.0.0', port=8118, debug=True, reloader=True)
+    app.run(host='0.0.0.0', port=8118, debug=True)
     #bottle.run(host='0.0.0.0', port=8118)
         
         

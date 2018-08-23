@@ -13,6 +13,9 @@ from state import AppState
 import logging
 from subprocess import Popen
 import signal
+import event
+import timefunc
+import datetime
 
 import helpers
 from mycolor import blue
@@ -32,12 +35,13 @@ logger = logging.getLogger()
 helpers.setup_logger(logger, stdout=True)
 
 blue_line = blue("=============================================================")
-print("\n"+blue_line)
-print( blue("*") + " flashfact control menu. If lost try help or autocomplete. " + blue("*"))
+print("\n" + blue_line)
+print( blue("*") + " FlashFact control menu. If lost try help or autocomplete. " + blue("*"))
 print(blue_line)
 class FlashFact(Cmd):
     prompt = '(flashfact command) '
     daemonpid = None
+    scheduler = None
     
     def __init__(self):
         super().__init__()
@@ -54,6 +58,7 @@ class FlashFact(Cmd):
         print("sqlite database location {filename}".format(filename=filename))
         
     def do_drop_and_create(self,s):
+        '''recreate the database destroying all data.'''
         if s != 'y':
             if input("are you sure you want to recreate database and lose all data?").lower().startswith('y'):
                 print("dropping database")
@@ -65,6 +70,7 @@ class FlashFact(Cmd):
         pass
     
     def do_exit(self, s):
+        '''really? you need help on the exit command?'''
         appstate.save_state()
         return True
         
@@ -73,29 +79,62 @@ class FlashFact(Cmd):
         appstate.dump_state()
         
     def do_loadstate(self,s):
+        '''reload the state of the app from /home/<user>/.flashfactrc'''
         appstate.load_state()
         
         
     def do_quit(self, s):
+        '''quit flashfactcmd'''
         return self.do_exit()
         
-    def do_test(self, s):
+    def do_oldtest(self, s):
         '''Whatever tests I\'m doing '''
-        print('{sqlite_store}/{database}.db'.format(**vars(appstate.instance)))
+        #print('{sqlite_store}/{database}.db'.format(**vars(appstate.instance)))
+        #
+        #for i in vars(appstate.instance):
+        #    print(i)
+        #
+        #filename =  '%s/%s' % ( os.getenv("HOME", '/tmp'), '.flashfactrc')
+        #print("state file is", filename)
+        #appstate.dump_state()
+        #appstate.save_state()
+        import requests
+        req = {'content': 'this stuff',
+               'time': "1:23",
+               'name': 'time1'}
+        #url = "http://halifax:8118/new_timer/test=tyt"
+        url = "http://halifax:8118/new_timer/{name}={time}&content={content}".format( **req )
+        print(url)
+        print (requests.get(url).content)
         
-        for i in vars(appstate.instance):
-            print(i)
         
-        filename =  '%s/%s' % ( os.getenv("HOME", '/tmp'), '.flashfactrc')
-        print("state file is", filename)
-        appstate.dump_state()
-        appstate.save_state()
+    def do_test(self, s):
+        if self.scheduler == None:
+            self.scheduler = event.Scheduler()
+        
+        def test_func(*args, **kwargs):
+            print("test_func called ", args, kwargs )
+        
+        if s == 'add':
+            self.scheduler.add_schedule( 20, test_func )
+        
+        if s == 'show' or s == 's':
+            
+            self.scheduler.show_schedule()
+            
+                
+            
+                
+        #if s == 'show_till_done':
+        #    while self.scheduler.join(1):
+                
         
     def do_restart(self, s):
         '''restart this menu'''
         os.execv( __file__, sys.argv[0:] )
         
     def do_reload(self,s):
+        '''exit and restart flashfactcmd'''
         return self.do_restart(s)
         
     def do_cta_tracker(self, s):
@@ -103,27 +142,45 @@ class FlashFact(Cmd):
         os.execv( dirname(__file__) + '/cta_trackercmd', sys.argv[0:] )
         
     def do_start_deamon(self,s):
+        '''stars the event controler daemon to service the API and scheduler'''
         if self.daemonpid:
             print
         self.daemonpid = Popen(["flashfactd"]).pid
         #self.daemonpid = Popen(["flashfactd", ">>",  "/dev/null"]).pid
         appstate.daemonpid = self.daemonpid
         appstate.save_state()
-        print(self.daemonpid)
+        print("daemon started with pid", self.daemonpid)
         
     def do_stop_daemon(self,s):
-        #if self.daemonpid and os.kill(self.daemonpid, 0):
+        '''stop the event controler daemen'''
         os.kill(self.daemonpid, signal.SIGINT)
         self.daemonpid = None
         appstate.save_state()
         
     def do_tickle(self, s):
+        '''send signal 40 to the daemon. What for? Dont know.'''
         if self.daemonpid:
             os.kill(self.daemonpid, 40)
             
-               
+            
+    def do_reminder(self, s):
+        at_time, message = s.split(' ', 1)
+        print(at_time)
+        def send_message():
+            print("message")
         
-    
+        seconds_to_event =(timefunc.stime_2datetime(at_time) - datetime.datetime.now()).total_seconds()
+        e = event.Event(seconds_left= seconds_to_event, callback=send_message).start()
+        #print (e.seconds_left)
+        
+    # def do_queue_counter(self, s):
+        # n
+        # try:
+            # n = float(s)
+        # except ValueError:
+        
+        
+
 
 if __name__ == "__main__":
      
