@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 import threading
 import state
@@ -7,7 +8,12 @@ appstate = state.AppState()
 #DEFAULT_FORMAT = "%(asctime)s %(name)s %(funcName)s line %(lineno)s %(levelname)s : %(message)s"
 DEFAULT_FORMAT = "%(asctime)s %(name)s.%(lineno)s %(levelname)s : %(message)s"
 
-def setup_logger(logger, path_name=None, level="INFO", stdout=False, format=DEFAULT_FORMAT, clobber_appstate=False):
+def setup_logger(logger, 
+                    path_name=None, 
+                    level="INFO", stdout=False, 
+                    format=DEFAULT_FORMAT, 
+                    clobber_appstate=False):
+                    
     formatter = logging.Formatter(format)
     logger.setLevel(logging.getLevelName(level))
     
@@ -17,7 +23,7 @@ def setup_logger(logger, path_name=None, level="INFO", stdout=False, format=DEFA
         level = appstate.get('loggerlevel', level) 
     
     if path_name:
-        loghandler = logging.handlers.RotatingFileHandler( path_name, maxBytes=300000, backupCount=5)
+        loghandler = RotatingFileHandler( path_name, maxBytes=300000, backupCount=5)
         loghandler.setFormatter(formatter)
         logger.addHandler(loghandler)
     
