@@ -9,6 +9,7 @@ import logging
 from cmd  import Cmd
 from os.path import join, dirname, abspath, exists
 from terminaltables import SingleTable
+from time import sleep
 
 import  model.db
 from model.cta import CTAArrival, CTARoute
@@ -16,6 +17,9 @@ from state import AppState
 import helpers
 import cta.protocol
 from mycolor import blue
+from cta import bus_data
+import threading
+import process
 
 appstate = AppState()  
 appstate.datadir = abspath( dirname(__file__) ) # make the tests dir the datadir
@@ -55,8 +59,13 @@ class CTATracker(Cmd):
     def do_quit(self, s):
         return True
         
+    def do_show_routes(self,s):  
+        for x,y in bus_data.static_routes:
+            print("%s\t%s" % (x,y))
+        
     def do_reload(self, s):
         self.do_restart(s)
+        
     def do_restart(self, s):
         '''restart this menu'''
         os.execv( __file__, sys.argv[0:] )
@@ -64,8 +73,8 @@ class CTATracker(Cmd):
     def do_test(self, s):
         self.db.merge_route_data(routes)
         
-    def do_route(self, s):
-        '''get route information and store it.
+    def do_load_route(self, s):
+        '''get a specific route information and store it.
             requires a bus route number example 49B.
         '''
         
@@ -75,16 +84,31 @@ class CTATracker(Cmd):
         route = s.upper().strip()
          
         routes = cta.protocol.get_routes(route)
-        results_header = ['stop_name', 'stop_id', 'direction']
+        results_header = ['Stop Name', 'Stop ID']
 
-        results = [[i['stop_name'], i['stop_id'], i['direction']] for i in routes]
-        results.insert(0, results_header)
-        table = SingleTable(results, title=" Stops in route %s" % route)
-        print( table.table )
+        def display_table(direction, data):
+            
+            results = [ [i['stop_name'], i['stop_id'] ] for i in data if direction == i['direction'] ]
+            if len(results) == 0:
+                return
+            results.insert(0, results_header)
+            table = SingleTable(results, title=" %s stops in route %s" % (direction, route))
+            print( table.table )
+        
+        display_table('Northbound', routes )
+        display_table('Southbound', routes )
+        display_table('Eastbound', routes )
+        display_table('Westbound', routes )
+        
         self.db.merge_route_data(routes)
         print('')
         
+        
+    def do_initialize_routes(self,s ):
     
+        for r in bus_data.static_routes:
+            self.do_load_route(r[0])
+            sleep(.5)
         
     def do_arrival(self, s):
         '''get bus stop activity and store it in database 
@@ -105,19 +129,52 @@ class CTATracker(Cmd):
     def do_main(self, s):
         os.execv( dirname(__file__) + '/flashfactcmd', sys.argv[0:] )
         
-   
-    #def do_setup_database(self, cmd):
-    #    if cmd == "":
-    #        database_name = input("OK what filename for this database? ")
-    #    if not database_name.endswith('.db') :
-    #        database_name = database_name + '.db'
-    #        
-    #    
-    #        
-    #    print ("ok we will set the database to of", appstate.datadir + "/" + database_name + ' and call it '+ database_name[:3])
-    #    
-        
+    def do_watch_arrival(self, s):
     
+        stop = None
+        try: 
+            stop = int(s)
+        except ValueError: 
+            print("please give a bus stop number.")
+            return
+            
+        #watch_arrival(watch_arrival,self.do_arrival, stop, caller=watch_arrival)
+            
+        t = threading.Thread(target = watch_arrival, args=(test, stop) )
+        t.start()
+        
+    def do_starttest(self,s):
+        p  = process.Update()
+        p.start()
+        self.process = p
+        
+    def do_stoptest(self,s ):
+        self.process.stop()
+        
+    def do_cancel_watch(self, s):
+        stop = None
+        try: 
+            stop = int(s)
+        except ValueError: 
+            print("please give a bus stop number.")
+            return
+        for t in threading.enumerate():
+            #if t.getName() == s:
+                
+            print(t.getName())
+ 
+def watch_arrival( callback, stop, caller=None ):
+
+    helpers.new_timed_callback(callback, seconds=5, args=(stop,) )
+    
+    
+def test(stop):
+    print(stop)
+    
+def watch_arrival(callback, stop):
+    while 1:
+        callback(stop)
+        sleep(5)
     
 
 if __name__ == "__main__":
