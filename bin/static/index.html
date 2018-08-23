@@ -2,11 +2,13 @@
 <html>
 <head>
  <meta charset="utf-8">
- <link rel="stylesheet" href="/src/jq/jquery-ui.min.css">  
- <script src="/src/jq/external/jquery/jquery.js" > </script>
- <script src="/src/jq/jquery-ui.min.js" > </script>
- 
+ <link rel="stylesheet" href="/static/src/jq/jquery-ui.min.css">  
+ <script src="/static/src/jq/external/jquery/jquery.js" > </script>
+ <script src="/static/src/jq/jquery-ui.min.js" > </script>
+ <script src="/static/src/date.format.js" > </script>
+ <link href="/static/dialog.css" rel="stylesheet">
 <style>
+
 .sidenav {
     height: 100%; /* Full-height: remove this if you want "auto" height */
     width: 160px; /* Set the width of the sidebar */
@@ -22,25 +24,25 @@
  
 table {
     //background-color: lightblue;  
-    border-style: solid ; 
+    border-style: solid; 
     color: white;
-    width: 80%
+    width: 80%;
+    background-blend-mode: multiply;
+    
 }
 
 
 
 body { 
     background: url("image/blue-2.png") no-repeat fixed center , url("image/circutboard.jpg") no-repeat fixed center; 
-    //background: url("image/blue-2.png") no-repeat fixed center , url("image/smallworld.jpg") no-repeat fixed center; 
     background-size: 100% 100%;
-    //background-color: black;
     width: auto;
     height: auto;
     background-blend-mode: multiply;
 }
 
-#title1 { 
-    background: lightgreen url("image/circutboard.jpg");
+#time-bar { 
+    background: yellow url("image/circutboard.jpg");
     //background-image: url("image/blue-2.jpg");
     //background-color: black; 
     font-family: Arial, Helvetica, sans-serif ; 
@@ -48,10 +50,15 @@ body {
     color: white;
     background-size: 100%;
     background-blend-mode: multiply;
+    border: 2px;
 }
-#timeLocal { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
-#timeUTC { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
-#timeISO { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+#event-table-head {background-color : 
+        lightblue; color : black;
+        font-family: Arial, Helvetica, sans-serif;
+}
+#time-local { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+#time-utc { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
+#time-iso { background-color: black; font-size: 80% ; padding-right: 20px; padding-left: 20px}
 
 </style>
     
@@ -59,39 +66,133 @@ body {
 <body>
     <script>
     
-    var totalRows = 0;
-    var timerInterval = null;
-    var addRowInterval = null;
-    
-    function addRow(){
-        if ( totalRows > 25 ){ clearInterval( addRowInterval); }
-        totalRows += 1;
-        //eventTable.append('<tr><td>h<td>g<td>');
-        $('#eventTable tr:last').after('<tr><td>'+ Date() +'<td>test event<td>stuff to do ');
+    var totalRowsShown = 0;
+    var ihTimer = null;
+    var ihAddRow = null;
+        
+    var dateStampFormat = "yyyy-mm-dd HH:MM:ss";
+    var utcDT = dateFormat(Date(), dateStampFormat, true);
+    var localDT = dateFormat(Date(), dateStampFormat);
+    var tableData = [{'event_time_UTC': utcDT ,
+                        'event_time_local': localDT ,
+                        'event_name':  'test event1',
+                        'event_data' : 'stuff to do for 1'},
+                     {'event_time_UTC': utcDT,
+                        'event_time_local': localDT,
+                        'event_name':  'test event2',
+                        'event_data' : 'stuff to do for 2'},
+                     {'event_time_UTC': utcDT,
+                        'event_time_local': localDT,
+                        'event_name':  'test event3',
+                        'event_data' : 'stuff to do for 3'},
+                     {'event_time_UTC': utcDT,
+                        'event_time_local': localDT,
+                        'event_name':  'test event4',
+                        'event_data' : 'stuff to do for 4'},
+                     {'event_time_UTC': utcDT,
+                        'event_time_local': localDT,
+                        'event_name':  'test event5',
+                        'event_data' : 'stuff to do for 5 '},
+                    ];
+                    
+    function constructData( lineNo ) {
+        var line = tableData[lineNo];
+        var delButton = $('<button id='+ lineNo +'>x</button>');
+        return '<tr><td>' + delButton.html() + '<td>' + line.event_time_UTC + 
+            "<td>" + line.event_time_local + 
+            "<td>" + line.event_name + 
+            "<td>" + line.event_data;
+    }
+        
+    function constructRealData( lineNo ) {
+        $.ajax({url: "/timers", async: false, success: function(result){
+            $("div").html(result);
+        }});
+    }
+        
+    function addData() {
+        var lineNo = tableData.length + 1;
+        var data = {'event_time_UTC': utcDT,
+                        'event_time_local': localDT,
+                        'event_name':  'test event' + lineNo,
+                        'event_data' : 'stuff to do for '+ lineNo }
+        
+        tableData.push(data);
+        ihAddRow = setInterval( addRow, 15 );
     }
     
-    function t1(){
+    function delData(lineNo){
+        
+    }
+    
+    function addRow(){
+        if ( totalRowsShown == 25 || totalRowsShown >= tableData.length ){
+            // top the timer if screen is full or out of data to show
+            clearInterval( ihAddRow );
+            return;
+        }
+        var data = constructData( totalRowsShown ) ;
+        
+        $('#event-table tr:last').after( data );
+        totalRowsShown += 1;
+    }
+    
+    function timeStampHeader(){
         var d = new Date();
-        $('#timeISO').text(d.toISOString());
-        $('#timeUTC').text( d.toUTCString());
-        $('#timeLocal').text(d.toLocaleDateString() + " " + d.toLocaleTimeString() );
+        $('#time-iso').text(d.toISOString());
+        $('#time-utc').text( dateFormat(Date(), "yyyy-mm-dd HH:MM:ss", true) );
+        $('#time-local').text( dateFormat("yyyy-mm-dd HH:MM:ss") );
     }
     
     $(document).ready( function(){
+        
     
-        t1();
+        timeStampHeader();
+        // setup interval handlers.
+        ihTimer = setInterval( timeStampHeader , 1000);
+        ihAddRow = setInterval( addRow, 15 );
+        $('#add-event-button').click( addData );   
 
-        //$('#timeTag').text('new time');
-        timerInterval = setInterval( t1 , 1000);
-        addRowInterval = setInterval( addRow, 20);
+        $("#dialog").dialog();
+        
+        $("#submit-creds").click( function(e) {
+            var email = $("#email").val();
+            var name = $("#name").val();
+            //var emailReg = '^([w-.]+@([w-]+.)+[w-]{2,4})?$';
+            if (email === '' || name === '') {
+                alert("Please fill all fields...!!!!!!");
+                //e.preventDefault();
+            //} else if (!(email).match(emailReg)) {
+             //   alert("Invalid Email...!!!!!!");
+            //    e.preventDefault();
+            } else {
+                alert("Form Submitted Successfully......" + email + " " + name);
+            }
+            $("#dialog").close();
+        });
+         
+        
     });
     </script>
-    <h2 id='title1'>  Local : <span id='timeLocal'></span>  UTC : <span id='timeUTC'></span>ISO  : <span id='timeISO'></span></h2>
+    <h2 id='time-bar'>  Local : <span id='time-local'></span>  UTC : <span id='time-utc'></span>ISO  : <span id='time-iso'></span></h2>
     
-    <table id='eventTable'>
-    <th>Event time<th> name <th> content <th><tr>
+    <button id='add-event-button'> Add Event </button>
+    <table id='event-table'>
+    <tr id='event-table-head'><th><th>Event time Local<th>Event time UTC<th> Name <th> Content
     
     </table>
+    
+    <div id="dialog" title="Basic dialog">
+     <p>This is the default dialog which is useful for displaying information. The dialog window can be moved, resized and closed with the 'x' icon.</p>
+     
+         <label>Name:</label>
+         <input id="name" name="name" type="text">
+         <label>Email:</label>
+         <input id="email" name="email" type="text">
+         <button id='submit-creds'> Submit </button>
+         <button id='cancel-creds'> Cancel </button>
+    
+    </div>
     
     
 </body>
